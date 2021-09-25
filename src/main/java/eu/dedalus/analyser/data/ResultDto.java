@@ -3,10 +3,17 @@ package eu.dedalus.analyser.data;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
-import java.util.HashMap;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
 public class ResultDto {
-    private HashMap<String, Integer> map;
+    private List<ResultItem> list;
+
+    @Data
+    @AllArgsConstructor
+    public static class ResultItem {
+        private String letter;
+        private Long times;
+    }
 }

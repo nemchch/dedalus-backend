@@ -5,67 +5,46 @@ import eu.dedalus.analyser.data.ResultDto;
 import eu.dedalus.analyser.service.AnalyserService;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class AnalyserServiceImpl implements AnalyserService {
 
+    private static final Set<Character> ALL_VOWELS = new HashSet<>(Arrays.asList('A', 'E', 'I', 'O', 'U'));
+
     @Override
     public ResultDto analyse(AnalyseDto analyseDto) {
-        String input = analyseDto.getText();
-        HashMap<String, Integer> result = new HashMap<>();
-        int numA = 0;
-        int numE = 0;
-        int numI = 0;
-        int numO = 0;
-        int numU = 0;
-        if (analyseDto.getVowels()) {
-            char[] chars = input.toCharArray();
-            for (char aChar : chars) {
-                System.out.println(aChar);
-                if (aChar == 'a' || aChar == 'A')
-                    numA++;
-                if (aChar == 'e' || aChar == 'E')
-                    numE++;
-                if (aChar == 'i' || aChar == 'I')
-                    numI++;
-                if (aChar == 'o' || aChar == 'O')
-                    numO++;
-                if (aChar == 'u' || aChar == 'U')
-                    numU++;
-            }
-            result.put("A", numA);
-            result.put("E", numE);
-            result.put("I", numI);
-            result.put("O", numO);
-            result.put("U", numU);
-        } else {
-            HashMap<String, Integer> consonants = new HashMap<>();
-            char[] chars = input.toCharArray();
-            for (char aChar : chars) {
-                if (aChar != 'a'
-                        && aChar != 'A'
-                        && aChar != 'e'
-                        && aChar != 'E'
-                        && aChar != 'i'
-                        && aChar != 'I'
-                        && aChar != 'o'
-                        && aChar != 'O'
-                        && aChar != 'u'
-                        && aChar != 'U'
-                ) {
-                    String stringCharacter = String.valueOf(aChar).toUpperCase();
-                    if (consonants.containsKey(stringCharacter)) {
-                        Integer num = consonants.get(stringCharacter);
-                        num++;
-                        consonants.put(stringCharacter, num);
-                    } else {
-                        consonants.put(stringCharacter, 1);
-                    }
-                }
-            }
-            result.putAll(consonants);
+        String input = analyseDto.getText().toUpperCase();
+        Map<Character, Long> analyse = getAnalyse(input);
+
+        if (Objects.isNull(analyseDto.getVowels())) {
+            return new ResultDto(getAnalyseResult(analyse));
         }
-        return new ResultDto(result);
+
+        Map<Character, Long> analyseLettersWithFilter;
+        if (analyseDto.getVowels()) {
+            analyseLettersWithFilter = analyse.entrySet().stream()
+                    .filter(item -> ALL_VOWELS.contains(item.getKey()))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        } else {
+            analyseLettersWithFilter = analyse.entrySet().stream()
+                    .filter(item -> !ALL_VOWELS.contains(item.getKey()))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        }
+
+        return new ResultDto(getAnalyseResult(analyseLettersWithFilter));
+    }
+
+    private Map<Character, Long> getAnalyse(String input) {
+        return input.toUpperCase().chars().mapToObj(ch -> (char) ch)
+                .filter(Character::isAlphabetic)
+                .collect(Collectors.groupingBy(c -> c, Collectors.counting()));
+    }
+
+    private List<ResultDto.ResultItem> getAnalyseResult(Map<Character, Long> frequentChars) {
+        return frequentChars.entrySet().stream()
+                .map(item -> new ResultDto.ResultItem(String.valueOf(item.getKey()), item.getValue()))
+                .collect(Collectors.toList());
     }
 }
